@@ -11,29 +11,36 @@ AUTHORIZATION='Authorization: Basic '"$CRED64";
 HOSTH='Host: '"$HOST";
 CTYPE='Content-Type: application/x-www-form-urlencoded';
 
-#create channel set
-CPOST='POST /com.broadsoft.async/com.broadsoft.xsi-events/v2.0/channel HTTP/1.1';
-CSET='<Channel xmlns="http://schema.broadsoft.com/xsi"><channelSetId>ChannelSetIdOne</channelSetId><priority>1</priority><weight>100</weight><expires>'"$EXPIRES"'</expires></Channel>';
-clen=$(echo -n "$CSET" | wc -c);
-CLEN='Content-Length: '"$clen";
-exec 3<>/dev/tcp/"$HOST"/"$PORT";
-echo -e "${CPOST}\n${AUTHORIZATION}\n${HOSTH}\n${CLEN}\n${CTYPE}\n\n${CSET}\n" >&3;
-RESP=$(head -n1 <&3);
 
-#subscribe channel
-CHANPOST='POST /com.broadsoft.xsi-events/v2.0/User/'"${USER}"' HTTP/1.1';
-CHANSET='<?xml version="1.0" encoding="UTF-8"?><Subscription xmlns="http://schema.broadsoft.com/xsi"><event>Basic Call</event><expires>'"$EXPIRES"'</expires><channelSetId>ChannelSetIdOne</channelSetId><applicationId>CommPilotApplication</applicationId></Subscription>';
-chanlen=$(echo -n "$CHANSET" | wc -c);
-CHANLEN='Content-Length: '"$chanlen";
-exec 4<>/dev/tcp/"$HOST"/"$PORT";
-echo -e "${CHANPOST}\n${AUTHORIZATION}\n${HOSTH}\n${CHANLEN}\n${CTYPE}\n\n${CHANSET}\n" >&4;
-RESP=$(head -n1 <&4);
-exec 4>&-;
+subscribe ()
+{
+    #create channel set
+    CPOST='POST /com.broadsoft.async/com.broadsoft.xsi-events/v2.0/channel HTTP/1.1';
+    CSET='<Channel xmlns="http://schema.broadsoft.com/xsi"><channelSetId>ChannelSetIdOne</channelSetId><priority>1</priority><weight>100</weight><expires>'"$EXPIRES"'</expires></Channel>';
+    clen=$(echo -n "$CSET" | wc -c);
+    CLEN='Content-Length: '"$clen";
+    exec 3<>/dev/tcp/"$HOST"/"$PORT";
+    echo -e "${CPOST}\n${AUTHORIZATION}\n${HOSTH}\n${CLEN}\n${CTYPE}\n\n${CSET}\n" >&3;
+    RESP=$(head -n1 <&3);
 
-#read from channel set
+    #subscribe channel
+    CHANPOST='POST /com.broadsoft.xsi-events/v2.0/User/'"${USER}"' HTTP/1.1';
+    CHANSET='<?xml version="1.0" encoding="UTF-8"?><Subscription xmlns="http://schema.broadsoft.com/xsi"><event>Basic Call</event><expires>'"$EXPIRES"'</expires><channelSetId>ChannelSetIdOne</channelSetId><applicationId>CommPilotApplication</applicationId></Subscription>';
+    chanlen=$(echo -n "$CHANSET" | wc -c);
+    CHANLEN='Content-Length: '"$chanlen";
+    exec 4<>/dev/tcp/"$HOST"/"$PORT";
+    echo -e "${CHANPOST}\n${AUTHORIZATION}\n${HOSTH}\n${CHANLEN}\n${CTYPE}\n\n${CHANSET}\n" >&4;
+    RESP=$(head -n1 <&4);
+    exec 4>&-;
+}
+
+
+subsDATE=$(date +%s);
+subscribe;
 gcID="";
 sDATE=$(date +%s);
 
+#read from channel set
 while true; do
     RESP="";
     cBUFF=0;
@@ -80,6 +87,17 @@ while true; do
             exec 4>&-;
         fi;
         sDATE="$nDATE";
+    fi;
+
+    let subsdelta=$nDATE-$subsDATE;
+    let subsdelta=$subsdelta*2;
+
+    if [ $subsdelta -gt $EXPIRES ]; then
+        exec 3>&-;
+        subsDATE=$(date +%s);
+        subscribe;
+        gcID="";
+        sDATE=$(date +%s);
     fi;
 
 done;
