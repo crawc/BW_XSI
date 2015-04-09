@@ -1,0 +1,5 @@
+USER="111@voip.broadworks.com";
+PASS="123456";
+HOST="broadworks.com";
+PORT="80";
+EXPIRES="3600";

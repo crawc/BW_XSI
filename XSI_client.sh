@@ -1,10 +1,7 @@
 #!/bin/bash
 
 #CONFIG
-USER="111@voip.broadworks.com";
-PASS="123456";
-HOST="broadworks.com";
-PORT="80";
+. config;
 
 #Basic auth
 CRED64=$(echo -n "${USER}:${PASS}" | base64);
