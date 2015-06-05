@@ -8,7 +8,7 @@ CRED64=$(echo -n "${USER}:${PASS}" | base64);
 
 #Default headers
 AUTHORIZATION='Authorization: Basic '"$CRED64";
-HOSTH='Host: '"$HOST";
+HOSTH='Host: '"$HTTPHOST";
 CTYPE='Content-Type: application/x-www-form-urlencoded';
 
 
@@ -16,7 +16,7 @@ subscribe ()
 {
     #create channel set
     CPOST='POST /com.broadsoft.async/com.broadsoft.xsi-events/v2.0/channel HTTP/1.1';
-    CSET='<Channel xmlns="http://schema.broadsoft.com/xsi"><channelSetId>ChannelSetIdOne</channelSetId><priority>1</priority><weight>100</weight><expires>'"$EXPIRES"'</expires></Channel>';
+    CSET='<?xml version="1.0" encoding="UTF-8"?><Channel xmlns="http://schema.broadsoft.com/xsi"><channelSetId>ChannelSetIdOne</channelSetId><priority>1</priority><weight>100</weight><expires>'"$EXPIRES"'</expires></Channel>';
     clen=$(echo -n "$CSET" | wc -c);
     CLEN='Content-Length: '"$clen";
     exec 3<>/dev/tcp/"$HOST"/"$PORT";
@@ -24,8 +24,8 @@ subscribe ()
     RESP=$(head -n1 <&3);
 
     #subscribe channel
-    CHANPOST='POST /com.broadsoft.xsi-events/v2.0/User/'"${USER}"' HTTP/1.1';
-    CHANSET='<?xml version="1.0" encoding="UTF-8"?><Subscription xmlns="http://schema.broadsoft.com/xsi"><event>Basic Call</event><expires>'"$EXPIRES"'</expires><channelSetId>ChannelSetIdOne</channelSetId><applicationId>CommPilotApplication</applicationId></Subscription>';
+    CHANPOST='POST /com.broadsoft.xsi-events/v2.0/User/'"${USER}"'/subscription'' HTTP/1.1';
+    CHANSET='<?xml version="1.0" encoding="UTF-8"?><Subscription xmlns="http://schema.broadsoft.com/xsi"><targetIdType>User</targetIdType><event>Basic Call</event><expires>'"$EXPIRES"'</expires><channelSetId>ChannelSetIdOne</channelSetId><applicationId>CommPilotApplication</applicationId></Subscription>';
     chanlen=$(echo -n "$CHANSET" | wc -c);
     CHANLEN='Content-Length: '"$chanlen";
     exec 4<>/dev/tcp/"$HOST"/"$PORT";
