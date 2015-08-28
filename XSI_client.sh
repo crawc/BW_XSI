@@ -65,14 +65,17 @@ while true; do
         fi;
 
         if [ "$eID" != "" ]; then
-            exec 4<>/dev/tcp/"$HOST"/"$PORT";
-            CONFPOST='POST /com.broadsoft.xsi-events/v2.0/channel/eventresponse HTTP/1.1';
-            CONFSET='<?xml version="1.0" encoding="UTF-8"?><EventResponse xmlns="http://schema.broadsoft.com/xsi"><eventID>'"$eID"'</eventID><statusCode>200</statusCode><reason>OK</reason></EventResponse>';
-            conflen=$(echo -n "$CONFSET" | wc -c);
-            CONFLEN='Content-Length: '"$conflen";
-            echo -e "${CONFPOST}\n${AUTHORIZATION}\n${HOSTH}\n${CONFLEN}\n${CTYPE}\n\n${CONFSET}\n" | sed "s/ChangeID/"$eID"/;" >&4;
-            RESP=$(head -n1 <&4);
-            exec 4>&-;
+            echo "$eID" | while read eIDs; do
+                exec 4<>/dev/tcp/"$HOST"/"$PORT";
+                CONFPOST='POST /com.broadsoft.xsi-events/v2.0/channel/eventresponse HTTP/1.1';
+                CONFSET='<?xml version="1.0" encoding="UTF-8"?><EventResponse xmlns="http://schema.broadsoft.com/xsi"><eventID>'"$eIDs"'</eventID><statusCode>200</statusCode><reason>OK</reason></EventResponse>';
+                conflen=$(echo -n "$CONFSET" | wc -c);
+                CONFLEN='Content-Length: '"$conflen";
+                echo -e "${CONFPOST}\n${AUTHORIZATION}\n${HOSTH}\n${CONFLEN}\n${CTYPE}\n\n${CONFSET}\n" >&4;
+                RESP=$(head -n1 <&4);
+                exec 4>&-;
+                sleep 1;
+            done;
         fi;
     fi;
 
